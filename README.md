@@ -32,6 +32,8 @@ Fantastic! We have some vacant non data science positions. All positions are vol
 - Data Procurement Specialist (Job description: Find more datasets for us to analyse.)
 - Marketing Executive (Approximate job descriptions: [Payscale](https://www.payscale.com/research/US/Job=Marketing_Executive/Salary/44af9422/Social-Media-Marketing) [SEEK](https://www.seek.com.au/career-advice/role/marketing-executive))
 
+*Reach to us at cnn@altmails.com*
+
 ## Follow us on Telegram @ t.me/covfefenewsnetwork
 
 _In God we trust. All other bring data._
