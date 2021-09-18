@@ -7,8 +7,9 @@ The charts below show vaccine adverse effects reported to VAERS by year. They ar
 
 We have adverse event reports for COVID-19 vacines starting from the end of 2020 until August 2021. The charts below show two "years" of COVID-19 adverse event counts. These "years" are incomplete. We have data up to August.
 
-[VAERS US Adverse Events](us_chart.png)
-[VAERS Non-US Adverse Events](non-us_chart.png)
+![VAERS US Adverse Events](us_chart.png)
+
+![VAERS Non-US Adverse Events](non-us_chart.png)
 
 ## Get the exact dataset that we are using
 Download the files from this Mega shared folder: https://mega.nz/folder/sBNmGBwA#1vITDQS9dF1mrS_VhfCdGg
