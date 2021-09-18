@@ -34,6 +34,6 @@ Fantastic! We have some vacant non data science positions. All positions are vol
 
 *Reach to us at cnn@altmails.com*
 
-## Follow us on Telegram @ t.me/covfefenewsnetwork
+## Follow us on Telegram @ https://t.me/covfefenewsnetwork
 
 _In God we trust. All other bring data._
