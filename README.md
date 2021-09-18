@@ -21,7 +21,9 @@ Please share all of the information here. Feel free to reproduce everything here
 Everything is open source and pubicly available. Scrutinise our work. Disprove it - or try to disprove it. We all wish that it was not true.
 
 ## Adverse Events are likely being underreported
-As of September 2021, DAVID JOHN SORENSEN & DR. VLADIMIR ZELENKO MD have recently published the "Vaccine Death Report", version 1.0. [This document presents the case that vaccine deaths are severly underreported.](zelenko_vaccine_death_report.pdf)
+As of September 2021, DAVID JOHN SORENSEN & DR. VLADIMIR ZELENKO MD have recently published the "Vaccine Death Report", version 1.0. [This document presents the case that vaccine deaths are severly underreported.](zelenko_vaccine_death_report.pdf) 
+
+Our analysis so far shows that the COVID19 vaccines are causing an alarming number of adverse events - assumming that the VAERS data is showing the full picture. If the VAERS data is missing a material quantity of adverse events reports for COVID19 vaccines, then the conclusion is *MUCH* more alarming than the data shows.
 
 ## "I want to help but I'm not a data scientist"
 Fantastic! We have some vacant non data science positions. All positions are voluntary - covfefe is it's own reward. 
