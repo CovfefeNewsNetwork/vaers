@@ -1,0 +1,214 @@
+---
+title: "Mortality after vaccination"
+author: "Anonymous"
+date: "29/09/2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=12, fig.height=8)
+
+library(data.table)
+library(ggplot2)
+library(scales)
+
+options( scipen = 999 )
+load("raw_vaers.RData")
+
+vax[,covid_vax := ifelse(VAX_TYPE == "COVID19", "COVID-19", "ALL OTHERS")]
+
+data.vax <- merge(x=data, y=vax, by="VAERS_ID")
+data.vax[,VAX_DATE := as.Date(VAX_DATE, format="%m/%d/%Y")]
+data.vax[,ONSET_DATE := as.Date(ONSET_DATE, format="%m/%d/%Y")]
+data.vax[,RECVDATE := as.Date(RECVDATE, format="%m/%d/%Y")]
+
+data.vax[,vax_year := year(VAX_DATE)]
+data.vax[,recv_year := year(RECVDATE)]
+data.vax[,vax_month := month(VAX_DATE)]
+data.vax[,recv_month := month(RECVDATE)]
+data.vax[,a_year := fcoalesce(vax_year, recv_year)]
+data.vax[,a_month := fcoalesce(vax_month, recv_month)]
+
+max_date = max(data.vax$RECVDATE, na.rm=T)
+min_date = min(data.vax$RECVDATE, na.rm=T)
+
+low_age = 18
+mid_age = 60
+
+from_year = 2010
+```
+
+
+## Data
+
+This report is based on VAERS database (https://vaers.hhs.gov/data.html) with the last record on the `r format(max_date, "%d %b %Y")`.
+
+VAERS database contains records about side effects from various vaccines. The database is run from year `r format(min_date, "%Y")`. Some side effects are deaths of the patients. The database contains records about `r sum(data.vax$DIED == "Y", na.rm=T)` deaths.
+
+Every vaccine applied to many patients with high probability will have death records in the VAERS database. This is because that even if the source of the death is not determined exactly but the vaccine could contribute to the death of the patient, the corresponding record would appear in the database.
+
+
+## Comparison of the vaccines using mortality after vaccination
+
+There are multiple ways to compare safety of different vaccines. Probably one of the most robust ways is to calculate probability to die after the vaccine shots for comparable age groups. The higher probability to die after the shot the less safe is the vaccine.
+
+Since at this stage of the reserch the whole number of vaccine shots is not available for all vaccines, it is difficult to calculate probability of death after the shot of a particular vaccine. Although, what is possible is to use number of simple cases as a proxy for number of administered vaccine shots.
+
+To separate age groups with extreme mortality rates (naturally) we consider age groups from `r low_age` to `r mid_age`, and from `r mid_age+1`. Also, only records from `r from_year` are taken into account. Records with unknown vaccines or vaccine manufacturers are excluded as well.
+
+Two types of vaccines are considered: "COVID-19" vaccines and "ALL OTHERS". In the graph below we consider ratio of all deaths after a particular vaccine. The data is split by vaccine or vaccine manufacturer and colored by vaccine type. Groups with small number or observations (less than 100) are excluded from the graphs.
+
+```{r p, echo=FALSE}
+df = data.vax[AGE_YRS >= low_age & AGE_YRS <= mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+         .(LIGHT = sum(HOSPITAL != "Y" & L_THREAT != "Y" & DIED != "Y", na.rm=T),
+           DEATHS = sum(DIED == "Y", na.rm=T)),
+         by=.(covid_vax, VAX_MANU)][LIGHT + DEATHS > 100,
+                                    .(COVID_VAX = covid_vax,
+                                      VAX_MANU = VAX_MANU,
+                                      LIGHT = LIGHT,
+                                      DEATHS = DEATHS,
+                                      PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_MANU, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death to no hospital - no life threat side effects ratio (%), age group ", low_age, "-", mid_age)) +
+  xlab("Vaccine manufacturer") + ylab("Death %") + labs(fill = "Type")
+
+```
+
+```{r p_, echo=FALSE}
+df = data.vax[AGE_YRS >= low_age & AGE_YRS <= mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+         .(LIGHT = sum(HOSPITAL != "Y" & L_THREAT != "Y" & DIED != "Y", na.rm=T),
+           DEATHS = sum(DIED == "Y", na.rm=T)),
+         by=.(covid_vax, VAX_NAME)][LIGHT + DEATHS > 100,
+                                    .(COVID_VAX = covid_vax,
+                                      VAX_NAME = VAX_NAME,
+                                      LIGHT = LIGHT,
+                                      DEATHS = DEATHS,
+                                      PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_NAME, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death to no hospital - no life threat side effects ratio (%), age group ", low_age, "-", mid_age)) +
+  xlab("Vaccine") + ylab("Death %") + labs(fill = "Type")
+
+```
+
+```{r p2, echo=FALSE}
+df = data.vax[AGE_YRS > mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+         .(LIGHT = sum(HOSPITAL != "Y" & L_THREAT != "Y" & DIED != "Y", na.rm=T),
+           DEATHS = sum(DIED == "Y", na.rm=T)),
+         by=.(covid_vax, VAX_MANU)][LIGHT + DEATHS > 100,
+                                    .(COVID_VAX = covid_vax,
+                                      VAX_MANU = VAX_MANU,
+                                      LIGHT = LIGHT,
+                                      DEATHS = DEATHS,
+                                      PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_MANU, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death to no hospital - no life threat side effects ratio (%), age group >", mid_age)) +
+  xlab("Vaccine manufacturer") + ylab("Death %") + labs(fill = "Type")
+
+```
+
+```{r p2_, echo=FALSE}
+df = data.vax[AGE_YRS > mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+         .(LIGHT = sum(HOSPITAL != "Y" & L_THREAT != "Y" & DIED != "Y", na.rm=T),
+           DEATHS = sum(DIED == "Y", na.rm=T)),
+         by=.(covid_vax, VAX_NAME)][LIGHT + DEATHS > 100,
+                                    .(COVID_VAX = covid_vax,
+                                      VAX_NAME = VAX_NAME,
+                                      LIGHT = LIGHT,
+                                      DEATHS = DEATHS,
+                                      PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_NAME, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death to no hospital - no life threat side effects ratio (%), age group >", mid_age)) +
+  xlab("Vaccine") + ylab("Death %") + labs(fill = "Type")
+
+```
+
+As we can see mortality rates are high for age group from `r mid_age+1`.
+
+Another way is to compare hospitalized patiens who survived and who died. It is more reliable way to compare as "light" cases can be under-reported because of various reasons.
+
+```{r p3, echo=FALSE}
+df = data.vax[AGE_YRS >= low_age & AGE_YRS <= mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+              .(LIGHT = sum(HOSPITAL == "Y" & HOSPDAYS > 1 & DIED != "Y", na.rm=T),
+                DEATHS = sum(DIED == "Y" & HOSPITAL == "Y" & HOSPDAYS > 1, na.rm=T)),
+              by=.(covid_vax, VAX_MANU)][LIGHT + DEATHS > 100,
+                                         .(COVID_VAX = covid_vax,
+                                           VAX_MANU = VAX_MANU,
+                                           LIGHT = LIGHT,
+                                           DEATHS = DEATHS,
+                                           PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_MANU, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death ratio (%) among in hospitalised patiens, age group ", low_age, "-", mid_age)) +
+  xlab("Vaccine manufacturer") + ylab("Death %") + labs(fill = "Type")
+```
+
+```{r p3_, echo=FALSE}
+df = data.vax[AGE_YRS >= low_age & AGE_YRS <= mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+              .(LIGHT = sum(HOSPITAL == "Y" & HOSPDAYS > 1 & DIED != "Y", na.rm=T),
+                DEATHS = sum(DIED == "Y" & HOSPITAL == "Y" & HOSPDAYS > 1, na.rm=T)),
+              by=.(covid_vax, VAX_NAME)][LIGHT + DEATHS > 100,
+                                         .(COVID_VAX = covid_vax,
+                                           VAX_NAME = VAX_NAME,
+                                           LIGHT = LIGHT,
+                                           DEATHS = DEATHS,
+                                           PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_NAME, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death ratio (%) among in hospitalised patiens, age group ", low_age, "-", mid_age)) +
+  xlab("Vaccine") + ylab("Death %") + labs(fill = "Type")
+```
+
+
+```{r p4, echo=FALSE}
+df = data.vax[AGE_YRS > mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+              .(LIGHT = sum(HOSPITAL == "Y" & HOSPDAYS > 1 & DIED != "Y", na.rm=T),
+                DEATHS = sum(DIED == "Y" & HOSPITAL == "Y" & HOSPDAYS > 1, na.rm=T)),
+              by=.(covid_vax, VAX_MANU)][LIGHT + DEATHS > 100,
+                                         .(COVID_VAX = covid_vax,
+                                           VAX_MANU = VAX_MANU,
+                                           LIGHT = LIGHT,
+                                           DEATHS = DEATHS,
+                                           PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_MANU, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death ratio (%) among in hospitalised patiens, age group >", mid_age)) +
+  xlab("Vaccine manufacturer") + ylab("Death %") + labs(fill = "Type")
+```
+
+```{r p4_, echo=FALSE}
+df = data.vax[AGE_YRS > mid_age & vax_year >= from_year & VAX_TYPE != "UNK" & VAX_MANU != "UNKNOWN MANUFACTURER",
+              .(LIGHT = sum(HOSPITAL == "Y" & HOSPDAYS > 1 & DIED != "Y", na.rm=T),
+                DEATHS = sum(DIED == "Y" & HOSPITAL == "Y" & HOSPDAYS > 1, na.rm=T)),
+              by=.(covid_vax, VAX_NAME)][LIGHT + DEATHS > 100,
+                                         .(COVID_VAX = covid_vax,
+                                           VAX_NAME = VAX_NAME,
+                                           LIGHT = LIGHT,
+                                           DEATHS = DEATHS,
+                                           PCT_DEATHS_LIGHT = DEATHS/LIGHT*100)][order(PCT_DEATHS_LIGHT)]
+
+ggplot(df, aes(x=reorder(VAX_NAME, PCT_DEATHS_LIGHT), y=PCT_DEATHS_LIGHT, fill=COVID_VAX)) +
+  geom_bar(stat="identity") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  ggtitle(paste0("Death ratio (%) among in hospitalised patiens, age group >", mid_age)) +
+  xlab("Vaccine") + ylab("Death %") + labs(fill = "Type")
+```
